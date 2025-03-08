@@ -15,6 +15,7 @@ from starlette.requests import Request
 from starlette.routing import Mount, Route
 from .proxy_server import create_proxy_server
 from .apis import APIApp
+from starlette.responses import JSONResponse
 
 
 @dataclass
@@ -65,15 +66,22 @@ def create_starlette_app(
             ),
         )
 
+    async def prompt_endpoint(request: Request) -> str:
+        user_message = request.query_params.get("user_message", "")
+        return JSONResponse({"response": await api_app.prompt(user_message)})
+
     return Starlette(
         debug=debug,
         middleware=middleware,
         routes=[
             Route("/sse", endpoint=handle_sse),
             Mount("/messages/", app=sse.handle_post_message),
-            Mount("/api", routes=[
-                Route("/prompt", endpoint=lambda s: api_app.promt(s), methods=["GET"]),
-            ])
+            Mount(
+                "/api", 
+                routes=[
+                    Route("/prompt", endpoint=prompt_endpoint, methods=["GET"]),
+                ]
+            )
         ],
     )
 

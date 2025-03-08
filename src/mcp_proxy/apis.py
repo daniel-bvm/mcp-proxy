@@ -13,16 +13,15 @@ class APIApp(object):
     def __init__(self, mcp_sse_host: str, mcp_sse_port: int):
         self.MCP_SSE_HOST = mcp_sse_host
         self.MCP_SSE_PORT = mcp_sse_port
-        self.base_url = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
+        self.base_url = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
         self.api_key = os.getenv("LLM_API_KEY")
+        self.model_id = os.getenv("LLM_MODEL_ID")
 
     async def prompt(self, user_message: str) -> str:
         llm_client = openai.AsyncClient(
             base_url=self.base_url,
             api_key=self.api_key
         )
-
-        model_id = os.getenv("LLM_MODEL_ID")
 
         messages = [
             {
@@ -77,7 +76,7 @@ class APIApp(object):
                 
                 completion = await llm_client.chat.completions.create(
                     messages=messages,
-                    model=model_id,
+                    model=self.model_id,
                     tools=openai_compatible_tools
                 )
                 
@@ -108,7 +107,7 @@ class APIApp(object):
 
                 if len(requested_toolcalls) > 0:
                     post_completion = await llm_client.chat.completions.create(
-                        model=model_id,
+                        model=self.model_id,
                         messages=messages,
                         tools=openai_compatible_tools,
                     )
