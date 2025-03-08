@@ -13,8 +13,8 @@ from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.routing import Mount, Route
-
 from .proxy_server import create_proxy_server
+from .apis import prompt as prompt_api
 
 
 @dataclass
@@ -65,6 +65,9 @@ def create_starlette_app(
         routes=[
             Route("/sse", endpoint=handle_sse),
             Mount("/messages/", app=sse.handle_post_message),
+            Mount("/api", routes=[
+                Route("/prompt", endpoint=prompt_api, methods=["GET"]),
+            ])
         ],
     )
 
