@@ -14,7 +14,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.routing import Mount, Route
 from .proxy_server import create_proxy_server
-from .apis import prompt as prompt_api
+from .apis import APIApp
 
 
 @dataclass
@@ -32,9 +32,15 @@ def create_starlette_app(
     *,
     allow_origins: list[str] | None = None,
     debug: bool = False,
+    mcpsse_host: str,
+    mcpsse_port: int
 ) -> Starlette:
     """Create a Starlette application that can server the provied mcp server with SSE."""
     sse = SseServerTransport("/messages/")
+    api_app = APIApp(
+        mcp_sse_host=mcpsse_host,
+        mcp_sse_port=mcpsse_port
+    )
 
     async def handle_sse(request: Request) -> None:
         async with sse.connect_sse(
@@ -66,7 +72,7 @@ def create_starlette_app(
             Route("/sse", endpoint=handle_sse),
             Mount("/messages/", app=sse.handle_post_message),
             Mount("/api", routes=[
-                Route("/prompt", endpoint=prompt_api, methods=["GET"]),
+                Route("/prompt", endpoint=lambda s: api_app.promt(s), methods=["GET"]),
             ])
         ],
     )
@@ -91,6 +97,8 @@ async def run_sse_server(
             mcp_server,
             allow_origins=sse_settings.allow_origins,
             debug=(sse_settings.log_level == "DEBUG"),
+            mcpsse_host=sse_settings.bind_host,
+            mcpsse_port=sse_settings.port
         )
 
         # Configure HTTP server
